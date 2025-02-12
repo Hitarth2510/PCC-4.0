@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RetroCode Arena</title>
+  <!-- Monaco Editor Loader -->
+  <script src="https://unpkg.com/monaco-editor/min/vs/loader.js"></script>
+  <!-- Skulpt: Python in the Browser -->
+  <script src="https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt-stdlib.js"></script>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <!-- Bootstrap Icons -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" />
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    :root {
+      --neon-green: #39ff14;
+      --crt-shadow: 0 0 10px #39ff14;
+    }
+    body {
+      background-color: #0a0a0a;
+      color: var(--neon-green);
+      font-family: 'VT323', monospace;
+      margin: 0;
+      padding: 1rem;
+    }
+    .retro-container {
+      border: 2px solid var(--neon-green);
+      box-shadow: var(--crt-shadow);
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    .retro-header {
+      font-family: 'Press Start 2P', cursive;
+      text-shadow: var(--crt-shadow);
+      margin-bottom: 1rem;
+    }
+    .editor-container {
+      height: 600px;
+      border: 2px solid var(--neon-green);
+      background: #1e1e1e;
+      position: relative;
+    }
+    .scanline {
+      background: linear-gradient(transparent 50%, rgba(0, 0, 0, 0.5) 50%);
+      background-size: 100% 4px;
+      pointer-events: none;
+    }
+    /* Monaco Editor container */
+    #code-editor {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body class="min-h-screen p-4">
+  <!-- Header -->
+  <header class="retro-container">
+    <h1 class="retro-header text-2xl md:text-4xl text-center">RetroCode Arena</h1>
+  </header>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <!-- Problem Statement Panel -->
+    <div class="retro-container">
+      <h2 class="retro-header text-xl">Problem #1: Print N Numbers</h2>
+      <p>Write a Python function that prints the first n natural numbers (1 to n).</p>
+      <h3 class="text-lg mt-4 mb-1">Input:</h3>
+      <p>Integer n (provided by the system)</p>
+      <h3 class="text-lg mt-4 mb-1">Output:</h3>
+      <p>Print numbers from 1 to n</p>
+      <h3 class="text-lg mt-4 mb-1">Example:</h3>
+      <pre class="bg-black p-2 text-white">
+Input: n = 5
+Output:
+1
+2
+3
+4
+5
+      </pre>
+    </div>
+
+    <!-- Code Editor Panel -->
+    <div class="retro-container">
+      <h2 class="retro-header text-xl text-center">Code Editor</h2>
+      <div class="editor-container">
+        <!-- Monaco Editor will be injected here -->
+        <div id="code-editor"></div>
+      </div>
+      <div class="p-4 flex space-x-4">
+        <button class="retro-button px-4 py-2 text-sm" onclick="runCode()">
+          <i class="bi bi-play-fill"></i> Run
+        </button>
+        <button class="retro-button px-4 py-2 text-sm" onclick="submitCode()">
+          <i class="bi bi-check2-circle"></i> Submit
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Test Cases Panel -->
+  <div class="retro-container">
+    <h3 class="retro-header text-xl">Test Cases</h3>
+    <div id="testCaseResults" class="scanline">
+      <!-- Test results will be populated here -->
+    </div>
+  </div>
+
+  <script>
+    // Wait for all external scripts to load.
+    window.addEventListener('load', function () {
+      // Skulpt builtin file reader
+      function builtinRead(x) {
+        if (Sk.builtinFiles === undefined || Sk.builtinFiles["files"][x] === undefined)
+          throw "File not found: '" + x + "'";
+        return Sk.builtinFiles["files"][x];
+      }
+      
+      // Updated runSkulpt function using a simpler prefix.
+      // This prefix overrides sys.stdin.read using a lambda.
+      function runSkulpt(code, testInput) {
+        return new Promise(function(resolve, reject) {
+          let output = "";
+          function outf(text) {
+            output += text;
+          }
+          Sk.configure({
+            output: outf,
+            read: builtinRead,
+            inputfun: function(prompt) {
+              return testInput;
+            },
+            inputfunTakesPrompt: true,
+          });
+          // Use JSON.stringify to safely embed testInput in the lambda.
+          const prefix = "import sys\n" +
+                         "sys.stdin.read = lambda: " + JSON.stringify(testInput);
+          const fullCode = prefix + "\n" + code;
+          Sk.misceval.asyncToPromise(function() {
+            return Sk.importMainWithBody("<stdin>", false, fullCode, true);
+          }).then(function(mod) {
+            resolve(output);
+          }, function(err) {
+            reject(err.toString());
+          });
+        });
+      }
+      
+      // Define test cases.
+      const publicTestCases = [
+        { input: "5", expectedOutput: "1\n2\n3\n4\n5", description: "Public Test Case 1" },
+        { input: "3", expectedOutput: "1\n2\n3", description: "Public Test Case 2" }
+      ];
+      const privateTestCases = [
+        { input: "1", expectedOutput: "1", description: "Private Test Case 1" },
+        { input: "10", expectedOutput: "1\n2\n3\n4\n5\n6\n7\n8\n9\n10", description: "Private Test Case 2" }
+      ];
+      
+      // Run public test cases.
+      window.runCode = function() {
+        const code = window.editor.getValue();
+        const results = document.getElementById('testCaseResults');
+        results.innerHTML = `<div class="text-yellow-400"><p>Running public test cases... ⌛</p></div>`;
+        let resultsHtml = "";
+        let promises = publicTestCases.map(testCase => {
+          return runSkulpt(code, testCase.input).then(output => {
+            output = output.trim();
+            let passed = (output === testCase.expectedOutput);
+            resultsHtml += `<div class="mb-2">
+              <p class="font-bold">${testCase.description}:</p>
+              <p>Input: ${testCase.input}</p>
+              <p>Expected Output:</p>
+              <pre class="bg-black p-2">${testCase.expectedOutput}</pre>`;
+            if (passed) {
+              resultsHtml += `<p class="text-green-400">✅ Passed</p>
+              <p>Your Output:</p>
+              <pre class="bg-black p-2">${output}</pre>
+              <p>Execution Time: (not measured)</p>`;
+            } else {
+              resultsHtml += `<p class="text-red-400">❌ Failed</p>
+              <p>Your Output:</p>
+              <pre class="bg-black p-2">${output}</pre>
+              <p>Execution Time: (not measured)</p>`;
+            }
+            resultsHtml += `</div>`;
+          }).catch(err => {
+            resultsHtml += `<div class="mb-2">
+              <p class="font-bold">${testCase.description}:</p>
+              <p>Input: ${testCase.input}</p>
+              <p class="text-red-400">❌ Error: ${err}</p>
+            </div>`;
+          });
+        });
+        Promise.all(promises).then(() => {
+          results.innerHTML = resultsHtml;
+        });
+      };
+      
+      // Run both public and private test cases.
+      window.submitCode = function() {
+        const code = window.editor.getValue();
+        const results = document.getElementById('testCaseResults');
+        results.innerHTML = `<div class="animate-pulse"><p>Submitting solution... ⌛</p></div>`;
+        let resultsHtml = "";
+        let promisesPublic = publicTestCases.map(testCase => {
+          return runSkulpt(code, testCase.input).then(output => {
+            output = output.trim();
+            let passed = (output === testCase.expectedOutput);
+            resultsHtml += `<div class="mb-2">
+              <p class="font-bold">${testCase.description}:</p>
+              <p>Input: ${testCase.input}</p>
+              <p>Expected Output:</p>
+              <pre class="bg-black p-2">${testCase.expectedOutput}</pre>`;
+            if (passed) {
+              resultsHtml += `<p class="text-green-400">✅ Passed</p>
+              <p>Your Output:</p>
+              <pre class="bg-black p-2">${output}</pre>
+              <p>Execution Time: (not measured)</p>`;
+            } else {
+              resultsHtml += `<p class="text-red-400">❌ Failed</p>
+              <p>Your Output:</p>
+              <pre class="bg-black p-2">${output}</pre>
+              <p>Execution Time: (not measured)</p>`;
+            }
+            resultsHtml += `</div>`;
+          }).catch(err => {
+            resultsHtml += `<div class="mb-2">
+              <p class="font-bold">${testCase.description}:</p>
+              <p>Input: ${testCase.input}</p>
+              <p class="text-red-400">❌ Error: ${err}</p>
+            </div>`;
+          });
+        });
+        let promisesPrivate = privateTestCases.map(testCase => {
+          return runSkulpt(code, testCase.input).then(output => {
+            output = output.trim();
+            let passed = (output === testCase.expectedOutput);
+            resultsHtml += `<div class="mb-2">
+              <p class="font-bold">${testCase.description}:</p>
+              <p>Input: ${testCase.input}</p>
+              <p>Expected Output:</p>
+              <pre class="bg-black p-2">${testCase.expectedOutput}</pre>`;
+            if (passed) {
+              resultsHtml += `<p class="text-green-400">✅ Passed</p>
+              <p>Your Output:</p>
+              <pre class="bg-black p-2">${output}</pre>
+              <p>Execution Time: (not measured)</p>`;
+            } else {
+              resultsHtml += `<p class="text-red-400">❌ Failed</p>
+              <p>Your Output:</p>
+              <pre class="bg-black p-2">${output}</pre>
+              <p>Execution Time: (not measured)</p>`;
+            }
+            resultsHtml += `</div>`;
+          }).catch(err => {
+            resultsHtml += `<div class="mb-2">
+              <p class="font-bold">${testCase.description}:</p>
+              <p>Input: ${testCase.input}</p>
+              <p class="text-red-400">❌ Error: ${err}</p>
+            </div>`;
+          });
+        });
+        Promise.all([...promisesPublic, ...promisesPrivate]).then(() => {
+          results.innerHTML = resultsHtml;
+        });
+      };
+      
+      // Initialize Monaco Editor with protected boilerplate.
+      require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor/min/vs' }});
+      require(['vs/editor/editor.main'], function () {
+        var header = "def print_numbers(n):";
+        var footer = "# System-provided test cases (DO NOT MODIFY)\nimport sys\nn = int(sys.stdin.read().strip())\nprint_numbers(n)";
+        var editableInitial = "    # Complete the missing code\n    pass";
+        var fullCode = header + "\n" + editableInitial + "\n\n" + footer;
+        
+        window.editor = monaco.editor.create(document.getElementById('code-editor'), {
+          value: fullCode,
+          language: 'python',
+          theme: 'vs-dark',
+          automaticLayout: true,
+          fontFamily: 'Consolas, monospace',
+          fontSize: 16,
+        });
+        
+        // Protect the boilerplate sections by reverting any changes.
+        var headerLines = header.split('\n');
+        var footerLines = footer.split('\n');
+        var suppressChange = false;
+        
+        window.editor.onDidChangeModelContent(function () {
+          if (suppressChange) return;
+          suppressChange = true;
+          var currentLines = window.editor.getValue().split('\n');
+  
+          // Restore header lines.
+          for (var i = 0; i < headerLines.length; i++) {
+            if (currentLines[i] !== headerLines[i]) {
+              currentLines[i] = headerLines[i];
+            }
+          }
+  
+          // Restore footer lines.
+          for (var j = 0; j < footerLines.length; j++) {
+            var idx = currentLines.length - footerLines.length + j;
+            if (currentLines[idx] !== footerLines[j]) {
+              currentLines[idx] = footerLines[j];
+            }
+          }
+  
+          var newValue = currentLines.join('\n');
+          if (newValue !== window.editor.getValue()) {
+            var currentPosition = window.editor.getPosition();
+            window.editor.setValue(newValue);
+            window.editor.setPosition(currentPosition);
+          }
+          suppressChange = false;
+        });
+      });
+    });
+  </script>
+</body>
+</html>

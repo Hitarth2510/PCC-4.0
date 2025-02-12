@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Panel - RetroCode Arena</title>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      background-color: black;
+      color: #33ff33;
+      font-family: 'Press Start 2P', cursive;
+      margin: 0;
+      padding: 1rem;
+    }
+    .retro-header {
+      text-align: center;
+      font-size: 2rem;
+      padding: 10px;
+      border-bottom: 2px solid #33ff33;
+      text-shadow: 0 0 5px #33ff33;
+    }
+    .container {
+      max-width: 600px;
+      margin: auto;
+      background: #111;
+      padding: 20px;
+      border: 2px solid #33ff33;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #33ff33;
+    }
+    label, input, textarea {
+      display: block;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    input, textarea {
+      background: black;
+      color: #33ff33;
+      border: 2px solid #33ff33;
+      padding: 8px;
+      font-family: 'Press Start 2P', cursive;
+    }
+    button {
+      background: #33ff33;
+      color: black;
+      font-weight: bold;
+      border: 2px solid #111;
+      padding: 10px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover {
+      background: black;
+      color: #33ff33;
+      box-shadow: 0 0 10px #33ff33;
+    }
+    .nav-buttons {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <header class="retro-header">
+    <h1>Admin Panel</h1>
+  </header>
+  <div class="container">
+    <h2>Add New Problem</h2>
+    <label for="title">Problem Title:</label>
+    <input type="text" id="title" placeholder="Enter problem title">
+    
+    <label for="description">Description:</label>
+    <textarea id="description" placeholder="Enter problem description"></textarea>
+    
+    <label for="initialCode">Initial Code:</label>
+    <textarea id="initialCode" placeholder="Provide starter code"></textarea>
+    
+    <label for="expectedOutput">Expected Output:</label>
+    <textarea id="expectedOutput" placeholder="Provide expected output"></textarea>
+    
+    <button onclick="saveProblem()">Save Problem</button>
+    <div class="nav-buttons">
+      <button onclick="goToIndex()">Go to IDE</button>
+    </div>
+  </div>
+  <script>
+    function saveProblem() {
+      const title = document.getElementById('title').value;
+      const description = document.getElementById('description').value;
+      const initialCode = document.getElementById('initialCode').value;
+      const expectedOutput = document.getElementById('expectedOutput').value;
+      
+      if (title && description && initialCode && expectedOutput) {
+        const problem = { title, description, initialCode, expectedOutput };
+        localStorage.setItem('newProblem', JSON.stringify(problem));
+        alert('Problem saved successfully!');
+      } else {
+        alert('Please fill all fields');
+      }
+    }
+    
+    function goToIndex() {
+      window.location.href = 'ide.html';
+    }
+  </script>
+</body>
+</html>

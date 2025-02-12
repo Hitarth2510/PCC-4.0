@@ -115,6 +115,9 @@
       <div class="buttons">
         <button onclick="runCode()">Run</button>
         <button onclick="clearOutput()">Clear Output</button>
+        <button onclick="zoomIn()">Zoom In (+)</button>
+        <button onclick="zoomOut()">Zoom Out (-)</button>
+
       </div>
     </div>
   </div>
@@ -156,35 +159,56 @@
     require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor/min/vs' } });
 require(['vs/editor/editor.main'], function () {
   monaco.editor.defineTheme('retroTheme', {
-    base: 'vs-dark', // Using dark theme as base
+    base: 'vs-dark', // Keep the dark theme as the base
     inherit: true,
     rules: [
-      { token: '', foreground: '33ff33', background: '000000' }, // Green text on black
-      { token: 'keyword', foreground: '00ff00' }, // Bright green for keywords
-      { token: 'comment', foreground: '007700' }, // Dark green for comments
-      { token: 'string', foreground: '00dd00' }, // Neon green for strings
-      { token: 'number', foreground: '33ff99' } // Light green for numbers
+      { token: '', foreground: '33ff33', background: '000000' }, // Default: Green text on black
+      { token: 'keyword', foreground: 'ffcc00', fontStyle: 'bold' }, // Yellow for keywords
+      { token: 'comment', foreground: '8888ff', fontStyle: 'italic' }, // Blue for comments
+      { token: 'string', foreground: 'ff5555' }, // Red for strings
+      { token: 'number', foreground: 'ff66ff' }, // Pink for numbers
+      { token: 'function', foreground: '66ffff' }, // Cyan for function names
+      { token: 'operator', foreground: 'ff8800' }, // Orange for operators (+, -, *, etc.)
+      { token: 'variable', foreground: '33ff33' }, // Green for variables
+      { token: 'type', foreground: 'ff00ff', fontStyle: 'bold' }, // Magenta for types (int, str, etc.)
     ],
     colors: {
-      'editor.foreground': '#33ff33',
-      'editor.background': '#000000',
-      'editorCursor.foreground': '#33ff33',
-      'editor.lineHighlightBackground': '#003300',
-      'editor.selectionBackground': '#005500',
-      'editor.selectionHighlightBackground': '#006600'
+      'editor.foreground': '#33ff33', // Default text green
+      'editor.background': '#000000', // Black background
+      'editorCursor.foreground': '#ffffff', // White cursor
+      'editor.lineHighlightBackground': '#222222', // Dark grey highlight for active line
+      'editor.selectionBackground': '#444400', // Yellow-green selection
+      'editor.selectionHighlightBackground': '#666600', // Slightly darker selection
+      'editor.lineNumbers.foreground': '#888888' // Grey line numbers
     }
   });
 
   window.editor = monaco.editor.create(document.getElementById('code-editor'), {
-    value: "# Write your Python code here",
+    value: "# Write your Python code here\nprint(\"Hello, World!\")",
     language: 'python',
     theme: 'retroTheme', // Apply the custom theme
     automaticLayout: true,
-    fontSize: 14,
-    fontFamily: "'Press Start 2P', cursive", // Applying the retro font
-    minimap: { enabled: false } // Disable minimap for a cleaner retro feel
+    fontSize: 20,
+    fontFamily: "'Press Start 2P', monospace", // Keep the retro font
+    minimap: { enabled: false }, // Disable minimap for a clean look
+    wordWrap: 'on' // Enable line wrapping
   });
 });
+let fontSize = 16; // Default font size
+
+function zoomIn() {
+  if (fontSize < 35) { // Max limit
+    fontSize += 2;
+    window.editor.updateOptions({ fontSize: fontSize });
+  }
+}
+
+function zoomOut() {
+  if (fontSize > 10) { // Min limit
+    fontSize -= 2;
+    window.editor.updateOptions({ fontSize: fontSize });
+  }
+}
 
   </script>
 </body>

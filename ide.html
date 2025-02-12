@@ -153,16 +153,39 @@
     function clearOutput() {
       document.getElementById('output').innerText = "No output yet...";
     }
-    require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor/min/vs' }});
-    require(['vs/editor/editor.main'], function () {
-      window.editor = monaco.editor.create(document.getElementById('code-editor'), {
-        value: "# Write your Python code here",
-        language: 'python',
-        theme: 'vs-dark',
-        automaticLayout: true,
-        fontSize: 14,
-      });
-    });
+    require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor/min/vs' } });
+require(['vs/editor/editor.main'], function () {
+  monaco.editor.defineTheme('retroTheme', {
+    base: 'vs-dark', // Using dark theme as base
+    inherit: true,
+    rules: [
+      { token: '', foreground: '33ff33', background: '000000' }, // Green text on black
+      { token: 'keyword', foreground: '00ff00' }, // Bright green for keywords
+      { token: 'comment', foreground: '007700' }, // Dark green for comments
+      { token: 'string', foreground: '00dd00' }, // Neon green for strings
+      { token: 'number', foreground: '33ff99' } // Light green for numbers
+    ],
+    colors: {
+      'editor.foreground': '#33ff33',
+      'editor.background': '#000000',
+      'editorCursor.foreground': '#33ff33',
+      'editor.lineHighlightBackground': '#003300',
+      'editor.selectionBackground': '#005500',
+      'editor.selectionHighlightBackground': '#006600'
+    }
+  });
+
+  window.editor = monaco.editor.create(document.getElementById('code-editor'), {
+    value: "# Write your Python code here",
+    language: 'python',
+    theme: 'retroTheme', // Apply the custom theme
+    automaticLayout: true,
+    fontSize: 14,
+    fontFamily: "'Press Start 2P', cursive", // Applying the retro font
+    minimap: { enabled: false } // Disable minimap for a cleaner retro feel
+  });
+});
+
   </script>
 </body>
 </html>

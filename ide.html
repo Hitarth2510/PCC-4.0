@@ -21,10 +21,6 @@
       border-bottom: 2px solid #33ff33;
       text-shadow: 0 0 5px #33ff33;
     }
-    /* Hide main container until data loads */
-    #data-container {
-      display: none;
-    }
     .container {
       display: flex;
       justify-content: space-between;
@@ -92,62 +88,56 @@
   </style>
 </head>
 <body>
-  <!-- Header remains visible while data loads -->
   <header class="retro-header">
     <h1>Paradox '25</h1>
     <h2>Round 1</h2>
   </header>
-  
-  <!-- Main container is hidden until data is loaded -->
-  <div id="data-container">
-    <div class="container">
-      <div class="left-panel">
-        <div class="problem-statement">
-          <!-- Initially empty to avoid flicker -->
-          <h2 id="problem-title"></h2>
-          <p id="problem-description"></p>
-        </div>
-        <div class="problem-input">
-          <h3>Input</h3>
-          <p id="problem-input"></p>
-        </div>
-        <div class="problem-output">
-          <h3>Expected Output</h3>
-          <p id="problem-output"></p>
-        </div>
+  <div class="container">
+    <div class="left-panel">
+      <div class="problem-statement">
+        <h2 id="problem-title">Problem Title</h2>
+        <p id="problem-description">Problem description will appear here.</p>
       </div>
-      <div class="editor-container">
-        <h2>Code Editor</h2>
-        <div id="code-editor"></div>
-        <div class="buttons">
-          <button id="run-btn">Run</button>
-          <button id="clear-btn">Clear Output</button>
-          <button id="zoom-in-btn">Zoom In (+)</button>
-          <button id="zoom-out-btn">Zoom Out (-)</button>
-        </div>
+      <div class="problem-input">
+        <h3>Input</h3>
+        <p id="problem-input">User Input</p>
+      </div>
+      <div class="problem-output">
+        <h3>Expected Output</h3>
+        <p id="problem-output">Expected Output</p>
       </div>
     </div>
-    <div class="output-container">
-      <h2>Console Output</h2>
-      <pre id="output">No output yet...</pre>
+    <div class="editor-container">
+      <h2>Code Editor</h2>
+      <div id="code-editor"></div>
+      <div class="buttons">
+        <button id="run-btn">Run</button>
+        <button id="clear-btn">Clear Output</button>
+        <button id="zoom-in-btn">Zoom In (+)</button>
+        <button id="zoom-out-btn">Zoom Out (-)</button>
+      </div>
     </div>
+  </div>
+  <div class="output-container">
+    <h2>Console Output</h2>
+    <pre id="output">No output yet...</pre>
   </div>
 
   <!-- Main logic using ES modules -->
   <script type="module">
-    // Automatically request fullscreen on load
+    // Automatically request fullscreen (note: may require a user gesture on some browsers)
     document.documentElement.requestFullscreen().catch(err => {
       console.error("Error enabling fullscreen:", err);
     });
 
-    // Import Supabase client from CDN
+    // Import Supabase client from CDN (using ES module syntax)
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
     const supabaseUrl = 'https://bubxtunvasdbacgfcocn.supabase.co';
-    const supabaseKey = 'YOUR_SUPABASE_KEY_HERE'; // Replace with your actual key
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1Ynh0dW52YXNkYmFjZ2Zjb2NuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzNzI0OTAsImV4cCI6MjA1Nzk0ODQ5MH0.-iaV1FRFErkoh5SNkX2OnG_OjL1RB5AJAYFBfkYOdxo'; // Replace with your actual Supabase key
     const supabase = createClient(supabaseUrl, supabaseKey);
     console.log("Supabase client initialized");
 
-    // Function to load the problem from Supabase (fetching the record with the lowest id)
+    // Function to load the problem (fetching the first record by lowest id)
     async function loadProblem() {
       try {
         const { data, error } = await supabase
@@ -162,12 +152,12 @@
         if (data && data.length > 0) {
           const problem = data[0];
           console.log("Fetched problem:", problem);
-          // Update DOM elements with the fetched data
+          // Update DOM elements with the problem data
           document.getElementById('problem-title').innerText = problem.title;
           document.getElementById('problem-description').innerText = problem.description;
           document.getElementById('problem-input').innerText = "User Input";
           document.getElementById('problem-output').innerText = problem.expected_output;
-          // Update Monaco Editor with the initial code
+          // Update the Monaco editor with the initial code (if the editor is available)
           if (window.editor) {
             window.editor.setValue(problem.initial_code);
           }
@@ -176,13 +166,10 @@
         }
       } catch (err) {
         console.error("Exception in loadProblem:", err);
-      } finally {
-        // Reveal the container once data is loaded (or attempted)
-        document.getElementById('data-container').style.display = "block";
       }
     }
 
-    // Skulpt's builtinRead for code execution
+    // Define builtinRead for Skulpt
     function builtinRead(x) {
       if (Sk.builtinFiles === undefined || Sk.builtinFiles["files"][x] === undefined)
         throw "File not found: '" + x + "'";
@@ -221,7 +208,7 @@
       }
     };
 
-    // Wire up button event listeners after DOM is ready
+    // Wire up button event listeners once the DOM is ready
     window.addEventListener('DOMContentLoaded', () => {
       document.getElementById('run-btn').addEventListener('click', window.runCode);
       document.getElementById('clear-btn').addEventListener('click', window.clearOutput);
@@ -229,7 +216,7 @@
       document.getElementById('zoom-out-btn').addEventListener('click', window.zoomOut);
     });
 
-    // Configure and load Monaco Editor using AMD loader
+    // Load Monaco Editor using AMD loader
     window.MonacoEnvironment = {
       getWorkerUrl: function(workerId, label) {
         return `data:text/javascript;charset=utf-8,${encodeURIComponent(`
@@ -244,7 +231,6 @@
     monacoLoaderScript.onload = () => {
       require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor@0.33.0/min/vs' } });
       require(['vs/editor/editor.main'], () => {
-        // Define a custom theme
         monaco.editor.defineTheme('retroTheme', {
           base: 'vs-dark',
           inherit: true,
@@ -269,9 +255,8 @@
             'editor.lineNumbers.foreground': '#888888'
           }
         });
-        // Create the Monaco Editor with an empty initial value
         window.editor = monaco.editor.create(document.getElementById('code-editor'), {
-          value: "", // Start with empty code to prevent flicker
+          value: "# Write your Python code here\nprint(\"Hello, World!\")",
           language: 'python',
           theme: 'retroTheme',
           automaticLayout: true,
@@ -281,7 +266,7 @@
           wordWrap: 'on'
         });
         console.log("Monaco editor created.");
-        // After editor creation, fetch the problem from the database
+        // After the editor is created, load the problem from the database
         loadProblem();
       });
     };

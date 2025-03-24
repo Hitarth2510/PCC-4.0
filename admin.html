@@ -89,38 +89,49 @@
   <!-- Include Supabase JS library -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
   <script>
-    // Initialize Supabase client – replace with your actual Supabase URL and anon key
-    const supabaseUrl = 'https://bubxtunvasdbacgfcocn.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1Ynh0dW52YXNkYmFjZ2Zjb2NuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzNzI0OTAsImV4cCI6MjA1Nzk0ODQ5MH0.-iaV1FRFErkoh5SNkX2OnG_OjL1RB5AJAYFBfkYOdxo';
+    console.log("Admin page script loaded");
+
+    // Initialize Supabase client – REPLACE with your actual Supabase URL and anon key
+    const supabaseUrl = 'https://your-project.supabase.co';
+    const supabaseKey = 'your-public-anon-key';
     const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
     async function saveProblem() {
+      console.log("Save button clicked");
+      
       const title = document.getElementById('title').value;
       const description = document.getElementById('description').value;
       const initialCode = document.getElementById('initialCode').value;
       const expectedOutput = document.getElementById('expectedOutput').value;
       
+      console.log("Collected form values:", { title, description, initialCode, expectedOutput });
+      
       if (title && description && initialCode && expectedOutput) {
-        // Insert the new problem into the Supabase database
-        const { data, error } = await supabase
-          .from('pcc_problems')
-          .insert([
-            {
-              title: title,
-              description: description,
-              initial_code: initialCode,
-              expected_output: expectedOutput
-            }
-          ]);
+        try {
+          const { data, error } = await supabase
+            .from('pcc_problems')
+            .insert([
+              {
+                title: title,
+                description: description,
+                initial_code: initialCode,
+                expected_output: expectedOutput
+              }
+            ]);
           
-        if (error) {
-          console.error('Error saving problem:', error);
-          alert('Error saving problem: ' + error.message);
-        } else {
-          alert('Problem saved successfully!');
+          if (error) {
+            console.error("Error saving problem:", error);
+            alert("Error saving problem: " + error.message);
+          } else {
+            console.log("Problem saved successfully:", data);
+            alert("Problem saved successfully!");
+          }
+        } catch (err) {
+          console.error("Exception during saving:", err);
+          alert("Exception: " + err.message);
         }
       } else {
-        alert('Please fill all fields');
+        alert("Please fill all fields");
       }
     }
     

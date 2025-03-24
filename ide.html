@@ -141,7 +141,7 @@
       // Function to load the problem from Supabase, ordered by the lowest id first
       async function loadProblem() {
         console.log("loadProblem called");
-        // Order by 'id' ascending so the first inserted (lowest id) is retrieved
+        // Order by 'id' ascending so the first inserted record (lowest id) is fetched
         const { data, error } = await supabaseClient
           .from('pcc_problems')
           .select('*')
@@ -154,10 +154,13 @@
         }
         if (data && data.length > 0) {
           const problem = data[0];
+          console.log("Fetched problem:", problem);
+          // Update the DOM elements with the problem data
           document.getElementById('problem-title').innerText = problem.title;
           document.getElementById('problem-description').innerText = problem.description;
           document.getElementById('problem-input').innerText = "User Input";
           document.getElementById('problem-output').innerText = problem.expected_output;
+          // Update the Monaco editor with the initial code if the editor is available
           if (window.editor) {
             window.editor.setValue(problem.initial_code);
             console.log("Monaco editor updated with problem code.");

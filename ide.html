@@ -138,13 +138,14 @@
       const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
       console.log("Supabase client initialized");
 
-      // Function to load the most recent problem from Supabase
+      // Function to load the problem from Supabase, ordered by the lowest id first
       async function loadProblem() {
         console.log("loadProblem called");
+        // Order by 'id' ascending so the first inserted (lowest id) is retrieved
         const { data, error } = await supabaseClient
           .from('pcc_problems')
           .select('*')
-          .order('created_at', { ascending: false })
+          .order('id', { ascending: true })
           .limit(1);
         console.log("Supabase loadProblem response:", { data, error });
         if (error) {

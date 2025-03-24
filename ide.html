@@ -117,7 +117,6 @@
         <button onclick="clearOutput()">Clear Output</button>
         <button onclick="zoomIn()">Zoom In (+)</button>
         <button onclick="zoomOut()">Zoom Out (-)</button>
-
       </div>
     </div>
   </div>
@@ -125,18 +124,40 @@
     <h2>Console Output</h2>
     <pre id="output">No output yet...</pre>
   </div>
+  
+  <!-- Include Supabase JS library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
   <script>
-    function loadProblem() {
-      const savedProblem = localStorage.getItem('newProblem');
-      if (savedProblem) {
-        const problem = JSON.parse(savedProblem);
+    // Initialize Supabase client – replace with your actual Supabase URL and anon key
+    const supabaseUrl = 'https://bubxtunvasdbacgfcocn.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1Ynh0dW52YXNkYmFjZ2Zjb2NuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzNzI0OTAsImV4cCI6MjA1Nzk0ODQ5MH0.-iaV1FRFErkoh5SNkX2OnG_OjL1RB5AJAYFBfkYOdxo';
+    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+    async function loadProblem() {
+      // Query the most recent problem from Supabase
+      const { data, error } = await supabase
+        .from('pcc_problems')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (error) {
+        console.error('Error loading problem:', error);
+        return;
+      }
+      if (data && data.length > 0) {
+        const problem = data[0];
         document.getElementById('problem-title').innerText = problem.title;
         document.getElementById('problem-description').innerText = problem.description;
         document.getElementById('problem-input').innerText = "User Input";
-        document.getElementById('problem-output').innerText = problem.expectedOutput;
-        window.editor.setValue(problem.initialCode);
+        document.getElementById('problem-output').innerText = problem.expected_output;
+        if (window.editor) {
+          window.editor.setValue(problem.initial_code);
+        }
+      } else {
+        console.log('No problem found in the database.');
       }
     }
+    
     function builtinRead(x) {
       if (Sk.builtinFiles === undefined || Sk.builtinFiles["files"][x] === undefined)
         throw "File not found: '" + x + "'";
@@ -156,60 +177,59 @@
     function clearOutput() {
       document.getElementById('output').innerText = "No output yet...";
     }
+    
     require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor/min/vs' } });
-require(['vs/editor/editor.main'], function () {
-  monaco.editor.defineTheme('retroTheme', {
-    base: 'vs-dark', // Keep the dark theme as the base
-    inherit: true,
-    rules: [
-      { token: '', foreground: '33ff33', background: '000000' }, // Default: Green text on black
-      { token: 'keyword', foreground: 'ffcc00', fontStyle: 'bold' }, // Yellow for keywords
-      { token: 'comment', foreground: '8888ff', fontStyle: 'italic' }, // Blue for comments
-      { token: 'string', foreground: 'ff5555' }, // Red for strings
-      { token: 'number', foreground: 'ff66ff' }, // Pink for numbers
-      { token: 'function', foreground: '66ffff' }, // Cyan for function names
-      { token: 'operator', foreground: 'ff8800' }, // Orange for operators (+, -, *, etc.)
-      { token: 'variable', foreground: '33ff33' }, // Green for variables
-      { token: 'type', foreground: 'ff00ff', fontStyle: 'bold' }, // Magenta for types (int, str, etc.)
-    ],
-    colors: {
-      'editor.foreground': '#33ff33', // Default text green
-      'editor.background': '#000000', // Black background
-      'editorCursor.foreground': '#ffffff', // White cursor
-      'editor.lineHighlightBackground': '#222222', // Dark grey highlight for active line
-      'editor.selectionBackground': '#444400', // Yellow-green selection
-      'editor.selectionHighlightBackground': '#666600', // Slightly darker selection
-      'editor.lineNumbers.foreground': '#888888' // Grey line numbers
+    require(['vs/editor/editor.main'], function () {
+      monaco.editor.defineTheme('retroTheme', {
+        base: 'vs-dark',
+        inherit: true,
+        rules: [
+          { token: '', foreground: '33ff33', background: '000000' },
+          { token: 'keyword', foreground: 'ffcc00', fontStyle: 'bold' },
+          { token: 'comment', foreground: '8888ff', fontStyle: 'italic' },
+          { token: 'string', foreground: 'ff5555' },
+          { token: 'number', foreground: 'ff66ff' },
+          { token: 'function', foreground: '66ffff' },
+          { token: 'operator', foreground: 'ff8800' },
+          { token: 'variable', foreground: '33ff33' },
+          { token: 'type', foreground: 'ff00ff', fontStyle: 'bold' },
+        ],
+        colors: {
+          'editor.foreground': '#33ff33',
+          'editor.background': '#000000',
+          'editorCursor.foreground': '#ffffff',
+          'editor.lineHighlightBackground': '#222222',
+          'editor.selectionBackground': '#444400',
+          'editor.selectionHighlightBackground': '#666600',
+          'editor.lineNumbers.foreground': '#888888'
+        }
+      });
+    
+      window.editor = monaco.editor.create(document.getElementById('code-editor'), {
+        value: "# Write your Python code here\nprint(\"Hello, World!\")",
+        language: 'python',
+        theme: 'retroTheme',
+        automaticLayout: true,
+        fontSize: 20,
+        fontFamily: "'Press Start 2P', monospace",
+        minimap: { enabled: false },
+        wordWrap: 'on'
+      });
+    });
+    
+    let fontSize = 16; // Default font size
+    function zoomIn() {
+      if (fontSize < 35) {
+        fontSize += 2;
+        window.editor.updateOptions({ fontSize: fontSize });
+      }
     }
-  });
-
-  window.editor = monaco.editor.create(document.getElementById('code-editor'), {
-    value: "# Write your Python code here\nprint(\"Hello, World!\")",
-    language: 'python',
-    theme: 'retroTheme', // Apply the custom theme
-    automaticLayout: true,
-    fontSize: 20,
-    fontFamily: "'Press Start 2P', monospace", // Keep the retro font
-    minimap: { enabled: false }, // Disable minimap for a clean look
-    wordWrap: 'on' // Enable line wrapping
-  });
-});
-let fontSize = 16; // Default font size
-
-function zoomIn() {
-  if (fontSize < 35) { // Max limit
-    fontSize += 2;
-    window.editor.updateOptions({ fontSize: fontSize });
-  }
-}
-
-function zoomOut() {
-  if (fontSize > 10) { // Min limit
-    fontSize -= 2;
-    window.editor.updateOptions({ fontSize: fontSize });
-  }
-}
-
+    function zoomOut() {
+      if (fontSize > 10) {
+        fontSize -= 2;
+        window.editor.updateOptions({ fontSize: fontSize });
+      }
+    }
   </script>
 </body>
 </html>

@@ -86,26 +86,31 @@
     </div>
   </div>
   
-  <!-- Include Supabase JS library -->
+  <!-- Include Supabase JS library before our inline script -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
   <script>
     console.log("Admin page script loaded");
 
+    // Ensure the Supabase library is attached to the window object.
+    if (!window.supabase) {
+      console.error("Supabase library not loaded!");
+    }
+
     // Initialize Supabase client – REPLACE with your actual Supabase URL and anon key
     const supabaseUrl = 'https://bubxtunvasdbacgfcocn.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1Ynh0dW52YXNkYmFjZ2Zjb2NuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzNzI0OTAsImV4cCI6MjA1Nzk0ODQ5MH0.-iaV1FRFErkoh5SNkX2OnG_OjL1RB5AJAYFBfkYOdxo';
-    const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+    const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
 
     async function saveProblem() {
       console.log("Save button clicked");
-      
+
       const title = document.getElementById('title').value;
       const description = document.getElementById('description').value;
       const initialCode = document.getElementById('initialCode').value;
       const expectedOutput = document.getElementById('expectedOutput').value;
-      
+
       console.log("Collected form values:", { title, description, initialCode, expectedOutput });
-      
+
       if (title && description && initialCode && expectedOutput) {
         try {
           const { data, error } = await supabaseClient
@@ -118,7 +123,7 @@
                 expected_output: expectedOutput
               }
             ]);
-          
+
           if (error) {
             console.error("Error saving problem:", error);
             alert("Error saving problem: " + error.message);
@@ -134,7 +139,7 @@
         alert("Please fill all fields");
       }
     }
-    
+
     function goToIndex() {
       window.location.href = 'ide.html';
     }

@@ -4,9 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>RetroCode Arena</title>
-  <script src="https://unpkg.com/monaco-editor/min/vs/loader.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt-stdlib.js"></script>
+  <!-- Monaco Editor loader -->
+  <script src="https://unpkg.com/monaco-editor/min/vs/loader.js" defer></script>
+  <!-- Skulpt for Python execution -->
+  <script src="https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/skulpt@1.2.0/dist/skulpt-stdlib.js" defer></script>
+  <!-- Supabase JS library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js" defer></script>
   <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet" />
   <style>
     body {
@@ -113,10 +117,10 @@
       <h2>Code Editor</h2>
       <div id="code-editor"></div>
       <div class="buttons">
-        <button onclick="runCode()">Run</button>
-        <button onclick="clearOutput()">Clear Output</button>
-        <button onclick="zoomIn()">Zoom In (+)</button>
-        <button onclick="zoomOut()">Zoom Out (-)</button>
+        <button id="run-btn">Run</button>
+        <button id="clear-btn">Clear Output</button>
+        <button id="zoom-in-btn">Zoom In (+)</button>
+        <button id="zoom-out-btn">Zoom Out (-)</button>
       </div>
     </div>
   </div>
@@ -125,119 +129,131 @@
     <pre id="output">No output yet...</pre>
   </div>
   
-  <!-- Include Supabase JS library -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
-  <script>
-    // Initialize Supabase client – REPLACE with your actual Supabase URL and anon key
-    const supabaseUrl = 'https://bubxtunvasdbacgfcocn.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1Ynh0dW52YXNkYmFjZ2Zjb2NuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzNzI0OTAsImV4cCI6MjA1Nzk0ODQ5MH0.-iaV1FRFErkoh5SNkX2OnG_OjL1RB5AJAYFBfkYOdxo';
-    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-    
-    async function loadProblem() {
-      console.log("loadProblem called");
-      // Query the most recent problem from Supabase
-      const { data, error } = await supabase
-        .from('pcc_problems')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(1);
-      console.log("Supabase response:", { data, error });
-      if (error) {
-        console.error('Error loading problem:', error);
-        return;
-      }
-      if (data && data.length > 0) {
-        const problem = data[0];
-        document.getElementById('problem-title').innerText = problem.title;
-        document.getElementById('problem-description').innerText = problem.description;
-        document.getElementById('problem-input').innerText = "User Input";
-        document.getElementById('problem-output').innerText = problem.expected_output;
-        if (window.editor) {
-          window.editor.setValue(problem.initial_code);
-          console.log("Editor updated with initial code");
+  <!-- Inline script to initialize Supabase, Monaco, and load the problem -->
+  <script defer>
+    window.addEventListener('load', function() {
+      // Initialize Supabase client (replace with your actual credentials)
+      const supabaseUrl = 'https://your-project.supabase.co';
+      const supabaseKey = 'your-public-anon-key';
+      const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);
+      console.log("Supabase client initialized");
+
+      // Function to load the most recent problem from Supabase
+      async function loadProblem() {
+        console.log("loadProblem called");
+        const { data, error } = await supabaseClient
+          .from('pcc_problems')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(1);
+        console.log("Supabase loadProblem response:", { data, error });
+        if (error) {
+          console.error("Error loading problem:", error);
+          return;
+        }
+        if (data && data.length > 0) {
+          const problem = data[0];
+          document.getElementById('problem-title').innerText = problem.title;
+          document.getElementById('problem-description').innerText = problem.description;
+          document.getElementById('problem-input').innerText = "User Input";
+          document.getElementById('problem-output').innerText = problem.expected_output;
+          if (window.editor) {
+            window.editor.setValue(problem.initial_code);
+            console.log("Monaco editor updated with problem code.");
+          } else {
+            console.warn("Monaco editor not available.");
+          }
         } else {
-          console.warn("Monaco editor is not loaded yet");
+          console.log("No problem found in database.");
         }
-      } else {
-        console.log('No problem found in the database.');
       }
-    }
-    
-    function builtinRead(x) {
-      if (Sk.builtinFiles === undefined || Sk.builtinFiles["files"][x] === undefined)
-        throw "File not found: '" + x + "'";
-      return Sk.builtinFiles["files"][x];
-    }
-    function runCode() {
-      let code = window.editor.getValue();
-      let outputElement = document.getElementById('output');
-      outputElement.innerText = "Running...";
-      let output = "";
-      function outf(text) { output += text + "\n"; }
-      Sk.configure({ output: outf, read: builtinRead });
-      Sk.misceval.asyncToPromise(() => Sk.importMainWithBody("<stdin>", false, code, true))
-        .then(() => outputElement.innerText = output)
-        .catch(err => outputElement.innerText = "Error: " + err.toString());
-    }
-    function clearOutput() {
-      document.getElementById('output').innerText = "No output yet...";
-    }
-    
-    let fontSize = 16; // Default font size
-    function zoomIn() {
-      if (fontSize < 35) {
-        fontSize += 2;
-        window.editor.updateOptions({ fontSize: fontSize });
+
+      // Functions for running, clearing, and adjusting code in the editor
+      function builtinRead(x) {
+        if (Sk.builtinFiles === undefined || Sk.builtinFiles["files"][x] === undefined)
+          throw "File not found: '" + x + "'";
+        return Sk.builtinFiles["files"][x];
       }
-    }
-    function zoomOut() {
-      if (fontSize > 10) {
-        fontSize -= 2;
-        window.editor.updateOptions({ fontSize: fontSize });
-      }
-    }
-    
-    // Configure and create the Monaco Editor, then load the problem data
-    require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor/min/vs' } });
-    require(['vs/editor/editor.main'], function () {
-      monaco.editor.defineTheme('retroTheme', {
-        base: 'vs-dark',
-        inherit: true,
-        rules: [
-          { token: '', foreground: '33ff33', background: '000000' },
-          { token: 'keyword', foreground: 'ffcc00', fontStyle: 'bold' },
-          { token: 'comment', foreground: '8888ff', fontStyle: 'italic' },
-          { token: 'string', foreground: 'ff5555' },
-          { token: 'number', foreground: 'ff66ff' },
-          { token: 'function', foreground: '66ffff' },
-          { token: 'operator', foreground: 'ff8800' },
-          { token: 'variable', foreground: '33ff33' },
-          { token: 'type', foreground: 'ff00ff', fontStyle: 'bold' },
-        ],
-        colors: {
-          'editor.foreground': '#33ff33',
-          'editor.background': '#000000',
-          'editorCursor.foreground': '#ffffff',
-          'editor.lineHighlightBackground': '#222222',
-          'editor.selectionBackground': '#444400',
-          'editor.selectionHighlightBackground': '#666600',
-          'editor.lineNumbers.foreground': '#888888'
+      
+      window.runCode = function() {
+        const code = window.editor.getValue();
+        const outputElement = document.getElementById('output');
+        outputElement.innerText = "Running...";
+        let output = "";
+        function outf(text) { output += text + "\n"; }
+        Sk.configure({ output: outf, read: builtinRead });
+        Sk.misceval.asyncToPromise(() => Sk.importMainWithBody("<stdin>", false, code, true))
+          .then(() => outputElement.innerText = output)
+          .catch(err => outputElement.innerText = "Error: " + err.toString());
+      };
+
+      window.clearOutput = function() {
+        document.getElementById('output').innerText = "No output yet...";
+      };
+
+      let fontSize = 20; // Default font size for the editor
+      window.zoomIn = function() {
+        if (fontSize < 35) {
+          fontSize += 2;
+          window.editor.updateOptions({ fontSize: fontSize });
         }
+      };
+
+      window.zoomOut = function() {
+        if (fontSize > 10) {
+          fontSize -= 2;
+          window.editor.updateOptions({ fontSize: fontSize });
+        }
+      };
+
+      // Wire up button event listeners
+      document.getElementById('run-btn').addEventListener('click', runCode);
+      document.getElementById('clear-btn').addEventListener('click', clearOutput);
+      document.getElementById('zoom-in-btn').addEventListener('click', zoomIn);
+      document.getElementById('zoom-out-btn').addEventListener('click', zoomOut);
+
+      // Configure and create the Monaco Editor
+      require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor/min/vs' } });
+      require(['vs/editor/editor.main'], function() {
+        monaco.editor.defineTheme('retroTheme', {
+          base: 'vs-dark',
+          inherit: true,
+          rules: [
+            { token: '', foreground: '33ff33', background: '000000' },
+            { token: 'keyword', foreground: 'ffcc00', fontStyle: 'bold' },
+            { token: 'comment', foreground: '8888ff', fontStyle: 'italic' },
+            { token: 'string', foreground: 'ff5555' },
+            { token: 'number', foreground: 'ff66ff' },
+            { token: 'function', foreground: '66ffff' },
+            { token: 'operator', foreground: 'ff8800' },
+            { token: 'variable', foreground: '33ff33' },
+            { token: 'type', foreground: 'ff00ff', fontStyle: 'bold' }
+          ],
+          colors: {
+            'editor.foreground': '#33ff33',
+            'editor.background': '#000000',
+            'editorCursor.foreground': '#ffffff',
+            'editor.lineHighlightBackground': '#222222',
+            'editor.selectionBackground': '#444400',
+            'editor.selectionHighlightBackground': '#666600',
+            'editor.lineNumbers.foreground': '#888888'
+          }
+        });
+
+        window.editor = monaco.editor.create(document.getElementById('code-editor'), {
+          value: "# Write your Python code here\nprint(\"Hello, World!\")",
+          language: 'python',
+          theme: 'retroTheme',
+          automaticLayout: true,
+          fontSize: fontSize,
+          fontFamily: "'Press Start 2P', monospace",
+          minimap: { enabled: false },
+          wordWrap: 'on'
+        });
+        console.log("Monaco editor created.");
+        // Once the editor is created, load the problem from the database
+        loadProblem();
       });
-    
-      window.editor = monaco.editor.create(document.getElementById('code-editor'), {
-        value: "# Write your Python code here\nprint(\"Hello, World!\")",
-        language: 'python',
-        theme: 'retroTheme',
-        automaticLayout: true,
-        fontSize: 20,
-        fontFamily: "'Press Start 2P', monospace",
-        minimap: { enabled: false },
-        wordWrap: 'on'
-      });
-      console.log("Monaco editor created");
-      // Now that the editor is ready, load the problem from Supabase
-      loadProblem();
     });
   </script>
 </body>

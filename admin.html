@@ -85,17 +85,40 @@
       <button onclick="goToIndex()">Go to IDE</button>
     </div>
   </div>
+  
+  <!-- Include Supabase JS library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
   <script>
-    function saveProblem() {
+    // Initialize Supabase client – replace with your actual Supabase URL and anon key
+    const supabaseUrl = 'https://bubxtunvasdbacgfcocn.supabase.co';
+    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1Ynh0dW52YXNkYmFjZ2Zjb2NuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzNzI0OTAsImV4cCI6MjA1Nzk0ODQ5MH0.-iaV1FRFErkoh5SNkX2OnG_OjL1RB5AJAYFBfkYOdxo';
+    const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+    async function saveProblem() {
       const title = document.getElementById('title').value;
       const description = document.getElementById('description').value;
       const initialCode = document.getElementById('initialCode').value;
       const expectedOutput = document.getElementById('expectedOutput').value;
       
       if (title && description && initialCode && expectedOutput) {
-        const problem = { title, description, initialCode, expectedOutput };
-        localStorage.setItem('newProblem', JSON.stringify(problem));
-        alert('Problem saved successfully!');
+        // Insert the new problem into the Supabase database
+        const { data, error } = await supabase
+          .from('pcc_problems')
+          .insert([
+            {
+              title: title,
+              description: description,
+              initial_code: initialCode,
+              expected_output: expectedOutput
+            }
+          ]);
+          
+        if (error) {
+          console.error('Error saving problem:', error);
+          alert('Error saving problem: ' + error.message);
+        } else {
+          alert('Problem saved successfully!');
+        }
       } else {
         alert('Please fill all fields');
       }

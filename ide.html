@@ -52,6 +52,7 @@
       border: 2px solid #33ff33;
       border-radius: 10px;
       box-shadow: 0 0 10px #33ff33;
+      position: relative;
     }
     #code-editor {
       width: 100%;
@@ -91,6 +92,17 @@
       border-radius: 5px;
       border: 1px solid #33ff33;
     }
+    /* Fullscreen toggle button style */
+    #fullscreen-btn {
+      position: absolute;
+      top: 5px;
+      right: 5px;
+      z-index: 10;
+      background: #33ff33;
+      color: black;
+      padding: 5px 10px;
+      font-size: 0.8rem;
+    }
   </style>
 </head>
 <body>
@@ -114,6 +126,8 @@
       </div>
     </div>
     <div class="editor-container">
+      <!-- Full screen toggle button -->
+      <button id="fullscreen-btn">Full Screen</button>
       <h2>Code Editor</h2>
       <div id="code-editor"></div>
       <div class="buttons">
@@ -129,7 +143,7 @@
     <pre id="output">No output yet...</pre>
   </div>
   
-  <!-- Inline script to initialize Supabase, Monaco, and load the problem -->
+  <!-- Inline script to initialize Supabase, Monaco, and implement full screen & tab detection -->
   <script defer>
     window.addEventListener('load', function() {
       // Initialize Supabase client (replace with your actual credentials)
@@ -155,12 +169,12 @@
         if (data && data.length > 0) {
           const problem = data[0];
           console.log("Fetched problem:", problem);
-          // Update the DOM elements with the problem data
+          // Update DOM elements with problem data
           document.getElementById('problem-title').innerText = problem.title;
           document.getElementById('problem-description').innerText = problem.description;
           document.getElementById('problem-input').innerText = "User Input";
           document.getElementById('problem-output').innerText = problem.expected_output;
-          // Update the Monaco editor with the initial code if the editor is available
+          // Update the Monaco editor with the initial code
           if (window.editor) {
             window.editor.setValue(problem.initial_code);
             console.log("Monaco editor updated with problem code.");
@@ -210,11 +224,32 @@
         }
       };
 
+      // Full screen toggle function
+      window.toggleFullScreen = function() {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(err => {
+            console.error(`Error attempting to enable full-screen mode: ${err.message} (${err.name})`);
+          });
+        } else {
+          document.exitFullscreen();
+        }
+      };
+
       // Wire up button event listeners
       document.getElementById('run-btn').addEventListener('click', runCode);
       document.getElementById('clear-btn').addEventListener('click', clearOutput);
       document.getElementById('zoom-in-btn').addEventListener('click', zoomIn);
       document.getElementById('zoom-out-btn').addEventListener('click', zoomOut);
+      document.getElementById('fullscreen-btn').addEventListener('click', toggleFullScreen);
+
+      // Detect if the user switches tabs (Page Visibility API)
+      document.addEventListener("visibilitychange", function() {
+        if (document.visibilityState === "hidden") {
+          console.warn("Tab switch detected! Cheating attempt?");
+          alert("Cheating detected: You have left the test page!");
+          // Optionally, you could disable the editor or log the event for further action.
+        }
+      });
 
       // Configure and create the Monaco Editor
       require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor/min/vs' } });

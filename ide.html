@@ -89,7 +89,7 @@
     }
   </style>
 </head>
-<body onload="loadProblem()">
+<body>
   <header class="retro-header">
     <h1>Paradox '25</h1>
     <h2>Round 1</h2>
@@ -128,18 +128,20 @@
   <!-- Include Supabase JS library -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js/dist/umd/supabase.min.js"></script>
   <script>
-    // Initialize Supabase client – replace with your actual Supabase URL and anon key
+    // Initialize Supabase client – REPLACE with your actual Supabase URL and anon key
     const supabaseUrl = 'https://bubxtunvasdbacgfcocn.supabase.co';
     const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1Ynh0dW52YXNkYmFjZ2Zjb2NuIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDIzNzI0OTAsImV4cCI6MjA1Nzk0ODQ5MH0.-iaV1FRFErkoh5SNkX2OnG_OjL1RB5AJAYFBfkYOdxo';
     const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-
+    
     async function loadProblem() {
+      console.log("loadProblem called");
       // Query the most recent problem from Supabase
       const { data, error } = await supabase
         .from('pcc_problems')
         .select('*')
         .order('created_at', { ascending: false })
         .limit(1);
+      console.log("Supabase response:", { data, error });
       if (error) {
         console.error('Error loading problem:', error);
         return;
@@ -152,6 +154,9 @@
         document.getElementById('problem-output').innerText = problem.expected_output;
         if (window.editor) {
           window.editor.setValue(problem.initial_code);
+          console.log("Editor updated with initial code");
+        } else {
+          console.warn("Monaco editor is not loaded yet");
         }
       } else {
         console.log('No problem found in the database.');
@@ -178,6 +183,21 @@
       document.getElementById('output').innerText = "No output yet...";
     }
     
+    let fontSize = 16; // Default font size
+    function zoomIn() {
+      if (fontSize < 35) {
+        fontSize += 2;
+        window.editor.updateOptions({ fontSize: fontSize });
+      }
+    }
+    function zoomOut() {
+      if (fontSize > 10) {
+        fontSize -= 2;
+        window.editor.updateOptions({ fontSize: fontSize });
+      }
+    }
+    
+    // Configure and create the Monaco Editor, then load the problem data
     require.config({ paths: { 'vs': 'https://unpkg.com/monaco-editor/min/vs' } });
     require(['vs/editor/editor.main'], function () {
       monaco.editor.defineTheme('retroTheme', {
@@ -215,21 +235,10 @@
         minimap: { enabled: false },
         wordWrap: 'on'
       });
+      console.log("Monaco editor created");
+      // Now that the editor is ready, load the problem from Supabase
+      loadProblem();
     });
-    
-    let fontSize = 16; // Default font size
-    function zoomIn() {
-      if (fontSize < 35) {
-        fontSize += 2;
-        window.editor.updateOptions({ fontSize: fontSize });
-      }
-    }
-    function zoomOut() {
-      if (fontSize > 10) {
-        fontSize -= 2;
-        window.editor.updateOptions({ fontSize: fontSize });
-      }
-    }
   </script>
 </body>
 </html>
